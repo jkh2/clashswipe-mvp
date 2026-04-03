@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #09090b;
+    color: white;
+  }
+}
+
+@layer utilities {
+  .swipe-card {
+    touch-action: none;
+    user-select: none;
+  }
+}
