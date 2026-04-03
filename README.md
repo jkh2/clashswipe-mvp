@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClashSwipe MVP
 
-## Getting Started
+**Swipe. Match. Fight. Fans vote with their wallets.**
 
-First, run the development server:
+Tinder-style matchmaking for fighters + fan-powered PPV bouts. Fighters swipe on opponents. Fans swipe on matches they'd pay to watch. When enough votes hit, the fight gets green-lit and streamed on the app.
 
+Built live in <5 minutes by Grok + Claude Sentinel as a fully functional demo.
+
+## Live Demo
+[→ Open the live app](https://clashswipe-mvp.vercel.app) *(deployed on Vercel)*
+
+## Core Features (MVP)
+- **Fighter Mode**
+  - Quick profile builder (name, weight, height, age, record, style)
+  - Real Tinder-style swipe cards with Framer Motion drag physics
+  - ✓ / ✕ buttons + mobile-optimized
+  - Public Fight Ledger (persistent via Zustand + localStorage)
+
+- **Fan Mode**
+  - Browse mutual "yes" matches
+  - Swipe "I'd Pay" / Pass
+  - Live estimated purse counter
+
+- **Tech Stack**
+  - Next.js 16 (App Router) + TypeScript
+  - Tailwind CSS v4 + shadcn/ui
+  - Framer Motion (butter-smooth swipes)
+  - Zustand + persist (localStorage)
+  - Sonner for toasts
+
+## How to Run Locally
 ```bash
+git clone https://github.com/jkh2/clashswipe-mvp.git
+cd clashswipe-mvp
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+Open http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Roadmap (what we ship next)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Supabase backend (real auth, shared matches, live voting across users)
+- Fighter verification + highlight reel upload
+- Real PPV paywall + mock live stream
+- Public Fight Ledger page
+- Mobile PWA install prompt
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Built as the foundation for the full ClashSwipe platform.
+Ready to show to gyms, fighters, and investors in Colorado today.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Made with 🔥 by James + Grok + Claude Sentinel
