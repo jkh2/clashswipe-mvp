@@ -7,7 +7,7 @@ Tinder-style matchmaking for fighters + fan-powered PPV bouts. Fighters swipe on
 Built live in <5 minutes by Grok + Claude Sentinel as a fully functional demo.
 
 ## Live Demo
-[→ Open the live app](https://clashswipe-mvp.vercel.app) *(deployed on Vercel)*
+[→ Open the live app](https://clashswipe-mvp.vercel.app) *(live on Vercel)*
 
 ## Core Features (MVP)
 - **Fighter Mode**
