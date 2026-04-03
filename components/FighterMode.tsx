@@ -1,46 +1,54 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useStore, type Fighter } from '@/store/useStore';
+import { useStore } from '@/store/useStore';
+import { Fighter } from '@/types';
+import { supabase } from '@/lib/supabase';
 import SwipeCard from './SwipeCard';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function FighterMode() {
-  const { currentUser, setCurrentUser, swipe, getMutualMatches } = useStore();
-  const [fighters, setFighters] = useState<Fighter[]>([]);
+  const { currentUser, setCurrentUser, fighters, loadFighters, swipe, getMutualMatches } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const mock: Fighter[] = [
-      { id: '1', name: 'Diego "The Beast" Morales', weight: 155, height: "5'9\"", age: 28, record: "12-3", style: "Striker", image: "https://picsum.photos/id/64/400/400", bio: "Aggressive kickboxer from Denver" },
-      { id: '2', name: 'Marcus Rivera', weight: 155, height: "5'10\"", age: 31, record: "9-2", style: "Grappler", image: "https://picsum.photos/id/201/400/400", bio: "Submission specialist" },
-      { id: '3', name: 'Tyler Kane', weight: 170, height: "6'1\"", age: 26, record: "15-4", style: "Striker", image: "https://picsum.photos/id/29/400/400", bio: "Power puncher" },
-    ];
-    setFighters(mock);
-  }, []);
+    loadFighters();
+  }, [loadFighters]);
 
   if (!currentUser) {
     return (
       <div className="p-6 max-w-md mx-auto">
         <h1 className="text-4xl font-bold mb-8">Build your fighter profile</h1>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             const form = e.target as HTMLFormElement;
-            const user: Fighter = {
-              id: 'me',
+            const profile = {
               name: (form.elements.namedItem('name') as HTMLInputElement).value,
               weight: parseInt((form.elements.namedItem('weight') as HTMLInputElement).value),
               height: (form.elements.namedItem('height') as HTMLInputElement).value,
               age: parseInt((form.elements.namedItem('age') as HTMLInputElement).value),
               record: (form.elements.namedItem('record') as HTMLInputElement).value,
               style: (form.elements.namedItem('style') as HTMLInputElement).value,
-              image: "https://picsum.photos/id/1005/400/400",
-              bio: "Local Colorado fighter ready to clash",
+              image: 'https://picsum.photos/id/1005/400/400',
+              bio: 'Local Colorado fighter ready to clash',
             };
-            setCurrentUser(user);
-            toast.success("Profile created! Time to start swiping");
+
+            const { data, error } = await supabase
+              .from('fighters')
+              .insert(profile)
+              .select()
+              .single();
+
+            if (error || !data) {
+              toast.error('Failed to save profile — check Supabase connection');
+              return;
+            }
+
+            setCurrentUser(data as Fighter);
+            await loadFighters();
+            toast.success('Profile created! Time to start swiping');
           }}
           className="space-y-6"
         >
@@ -58,15 +66,17 @@ export default function FighterMode() {
     );
   }
 
-  const currentFighter = fighters[currentIndex];
+  // Filter out current user from swipe deck
+  const deck = fighters.filter((f) => f.id !== currentUser.id);
+  const currentFighter = deck[currentIndex];
 
-  const handleSwipe = (direction: 'yes' | 'no') => {
+  const handleSwipe = async (direction: 'yes' | 'no') => {
     if (currentFighter) {
-      swipe(currentFighter.id, direction);
+      await swipe(currentFighter.id, direction);
       const next = currentIndex + 1;
       setCurrentIndex(next);
-      if (next >= fighters.length) {
-        toast("Out of fighters in your class! Check your Fight Ledger");
+      if (next >= deck.length) {
+        toast('Out of fighters in your class! Check your Fight Ledger');
       }
     }
   };
@@ -91,7 +101,9 @@ export default function FighterMode() {
 
       {/* Swipe area */}
       <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden">
-        {currentIndex < fighters.length ? (
+        {deck.length === 0 ? (
+          <p className="text-zinc-400">Loading fighters...</p>
+        ) : currentIndex < deck.length ? (
           <SwipeCard fighter={currentFighter} onSwipe={handleSwipe} />
         ) : (
           <div className="text-center">

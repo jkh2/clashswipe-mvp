@@ -1,59 +1,81 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-export type Fighter = {
-  id: string;
-  name: string;
-  weight: number;
-  height: string;
-  age: number;
-  record: string;
-  style: string;
-  image: string;
-  bio: string;
-};
-
-const mockFighters: Fighter[] = [
-  { id: '1', name: 'Diego "The Beast" Morales', weight: 155, height: "5'9\"", age: 28, record: "12-3", style: "Striker", image: "https://picsum.photos/id/64/400/400", bio: "Aggressive kickboxer" },
-  { id: '2', name: 'Marcus Rivera', weight: 155, height: "5'10\"", age: 31, record: "9-2", style: "Grappler", image: "https://picsum.photos/id/201/400/400", bio: "BJJ black belt" },
-  { id: '3', name: 'Tyler Kane', weight: 170, height: "6'1\"", age: 26, record: "15-4", style: "Striker", image: "https://picsum.photos/id/29/400/400", bio: "Power puncher" },
-];
+import { supabase } from '@/lib/supabase';
+import { Fighter } from '@/types';
 
 type Store = {
   currentUser: Fighter | null;
+  fighters: Fighter[];
   swipes: Record<string, 'yes' | 'no'>;
   mutualMatches: string[];
   fanVotes: Record<string, number>;
-  setCurrentUser: (user: Fighter) => void;
-  swipe: (fighterId: string, direction: 'yes' | 'no') => void;
+  setCurrentUser: (user: Fighter | null) => void;
+  loadFighters: () => Promise<void>;
+  swipe: (fighterId: string, direction: 'yes' | 'no') => Promise<void>;
   getMutualMatches: () => Fighter[];
-  voteAsFan: (matchId: string, vote: boolean) => void;
+  voteAsFan: (matchId: string) => Promise<void>;
+  subscribeToVotes: () => void;
 };
 
-export const useStore = create<Store>()(
-  persist(
-    (set, get) => ({
-      currentUser: null,
-      swipes: {},
-      mutualMatches: ['1-2'],
-      fanVotes: { '1-2': 87 },
-      setCurrentUser: (user) => set({ currentUser: user }),
-      swipe: (id, direction) =>
-        set((state) => ({
-          swipes: { ...state.swipes, [id]: direction },
-        })),
-      getMutualMatches: () => {
-        const state = get();
-        return mockFighters.filter(f => state.swipes[f.id] === 'yes' && state.mutualMatches.includes(`1-${f.id}`));
-      },
-      voteAsFan: (matchId, vote) =>
-        set((state) => ({
-          fanVotes: {
-            ...state.fanVotes,
-            [matchId]: (state.fanVotes[matchId] || 0) + (vote ? 1 : 0),
-          },
-        })),
-    }),
-    { name: 'clashswipe-storage' }
-  )
-);
+export const useStore = create<Store>((set, get) => ({
+  currentUser: null,
+  fighters: [],
+  swipes: {},
+  mutualMatches: [],
+  fanVotes: {},
+
+  setCurrentUser: (user) => set({ currentUser: user }),
+
+  loadFighters: async () => {
+    const { data } = await supabase.from('fighters').select('*');
+    set({ fighters: data || [] });
+  },
+
+  swipe: async (fighterId, direction) => {
+    const { currentUser } = get();
+    if (!currentUser) return;
+
+    await supabase.from('swipes').upsert({
+      user_id: currentUser.id,
+      fighter_id: fighterId,
+      direction,
+    });
+
+    set((state) => ({
+      swipes: { ...state.swipes, [fighterId]: direction },
+    }));
+  },
+
+  getMutualMatches: () => {
+    const state = get();
+    return state.fighters.filter(
+      (f) => state.swipes[f.id] === 'yes' && state.mutualMatches.includes(`${state.currentUser?.id}-${f.id}`)
+    );
+  },
+
+  voteAsFan: async (matchId) => {
+    const current = get().fanVotes[matchId] || 0;
+    await supabase
+      .from('votes')
+      .upsert({ match_id: matchId, count: current + 1 }, { onConflict: 'match_id' });
+    // Realtime subscription handles the state update
+  },
+
+  subscribeToVotes: () => {
+    supabase
+      .channel('votes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'votes' },
+        (payload) => {
+          const row = payload.new as { match_id: string; count: number };
+          set((state) => ({
+            fanVotes: {
+              ...state.fanVotes,
+              [row.match_id]: row.count || 0,
+            },
+          }));
+        }
+      )
+      .subscribe();
+  },
+}));

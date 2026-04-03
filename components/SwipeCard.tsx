@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
-import { Fighter } from '@/store/useStore';
+import { Fighter } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
